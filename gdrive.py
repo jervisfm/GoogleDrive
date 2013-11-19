@@ -8,6 +8,15 @@ class GFile(object):
     def __init__(self):
         pass
 
+class GDriveAuth(object):
+    """Encapsulates OAUTH2 authentication details for Google Drive API. """
+    def __init__(self, client_id, client_secret, oauth_scope, redirect_uri):
+        self.client_id = client_id
+        self.client_secret = client_secret
+        self.oauth_scope = oauth_scope
+        self.redirect_uri = redirect_uri
+
+
 class GDrive(object):
     """Represents a Google Drive object. """
     def __init__(self):
