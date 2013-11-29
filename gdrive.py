@@ -33,7 +33,7 @@ class GDrive(object):
     def download(src_file, dest_file):
         """Downloads the specified file from Drive onto a local file. 
         Args:
-          src_file: the source file to be uploaded
+          src_file: the source file to be downloaded
           dest_file: the destination file to save downloaded file to. 
         """
         pass
