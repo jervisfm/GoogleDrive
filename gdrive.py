@@ -51,14 +51,16 @@ class GDrive(object):
 import httplib2
 import pprint
 
+import time
+
 from apiclient.discovery import build
 from apiclient.http import MediaFileUpload
 from oauth2client.client import OAuth2WebServerFlow
-
+from oauth2client.client import Credentials
 
 # Copy your credentials from the console
-CLIENT_ID = 'YOUR_CLIENT_ID'
-CLIENT_SECRET = 'YOUR_CLIENT_SECRET'
+CLIENT_ID = None
+CLIENT_SECRET = None
 
 # Check https://developers.google.com/drive/scopes for all available scopes
 OAUTH_SCOPE = 'https://www.googleapis.com/auth/drive'
@@ -69,12 +71,25 @@ REDIRECT_URI = 'urn:ietf:wg:oauth:2.0:oob'
 # Path to the file to upload
 FILENAME = 'document.txt'
 
+DRIVE_CLIENT_SECRET_JSON='drive_client_secret.json'
+
 # Run through the OAuth flow and retrieve credentials
-flow = OAuth2WebServerFlow(CLIENT_ID, CLIENT_SECRET, OAUTH_SCOPE, REDIRECT_URI)
-authorize_url = flow.step1_get_authorize_url()
-print 'Go to the following link in your browser: ' + authorize_url
-code = raw_input('Enter verification code: ').strip()
-credentials = flow.step2_exchange(code)
+#flow = OAuth2WebServerFlow(CLIENT_ID, CLIENT_SECRET, OAUTH_SCOPE, REDIRECT_URI)
+#authorize_url = flow.step1_get_authorize_url()
+#print 'Go to the following link in your browser: ' + authorize_url
+#code = raw_input('Enter verification code: ').strip()
+#credentials = flow.step2_exchange(code)
+
+print 'creating credentail from stored json'
+cred_json=open(DRIVE_CLIENT_SECRET_JSON).read()
+
+credentials = Credentials.new_from_json(cred_json)
+
+print type(credentials)
+print dir(credentials)
+print credentials.to_json()
+print credentials.__repr__()
+# exit(0)
 
 # Create an httplib2.Http object and authorize it with our credentials
 http = httplib2.Http()
@@ -83,12 +98,22 @@ http = credentials.authorize(http)
 drive_service = build('drive', 'v2', http=http)
 
 # Insert a file
-media_body = MediaFileUpload(FILENAME, mimetype='text/plain', resumable=True)
+mimetype = 'text/plain'
+# media_body = MediaFileUpload(FILENAME, mimetype=mimetype, resumable=True)
+media_body = MediaFileUpload(FILENAME, resumable=True)
 body = {
-  'title': 'My document',
+  'title': 'My document - json creds',
   'description': 'A test document',
-  'mimeType': 'text/plain'
+   #'mimeType': mimetype
 }
 
-file = drive_service.files().insert(body=body, media_body=media_body).execute()
-pprint.pprint(file)
+
+start = time.time()
+
+file_req = drive_service.files().insert(body=body, media_body=media_body)
+print file_req
+file = file_req.execute()
+print "Upload took %s secs" % (time.time() - start)
+
+
+#pprint.pprint(file)
