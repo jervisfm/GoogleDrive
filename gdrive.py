@@ -3,18 +3,111 @@
 __author__ = 'Jervis Muindi'
 __date__ = 'November 2013'
 
+import httplib2
+import time
+
+from apiclient.discovery import build
+from apiclient.http import MediaFileUpload
+from oauth2client.client import OAuth2WebServerFlow
+from oauth2client.client import Credentials
+
 class GFile(object):
     """Encapsulates a GFile Object"""
     def __init__(self):
         pass
 
 class GDriveAuth(object):
-    """Encapsulates OAUTH2 authentication details for Google Drive API. """
-    def __init__(self, client_id, client_secret, oauth_scope, redirect_uri):
+    """Encapsulates OAUTH2 authentication details for Google Drive API. 
+    
+    Also provides methods for obtaining user credentials that can be saved and 
+    re-used to perfrom requests on behalf of the user.
+    
+    """
+    
+    # Request Full Drive Permission Access scope. 
+    # See https://developers.google.com/drive/scopes for more details
+    DEFAULT_OAUTH_SCOPE = 'https://www.googleapis.com/auth/drive'
+    
+    # Redirect URI for installed apps
+    DEFAULT_REDIRECT_URI = 'urn:ietf:wg:oauth:2.0:oob'
+    
+    # Default Save location for user auth token credentials
+    DEFAULT_CRED_FILEPATH = "~/.drive_auth"
+
+    def __init__(self, client_id, client_secret, oauth_scope=None, redirect_uri=None):
         self.client_id = client_id
         self.client_secret = client_secret
-        self.oauth_scope = oauth_scope
-        self.redirect_uri = redirect_uri
+
+        # Use Default Values if no user-supplied values exist
+
+        if not oauth_scope:
+            self.oauth_scope = DEFAULT_OAUTH_SCOPE
+
+        if not reduce_uri:
+            self.redirect_uri = DEFAULT_REDIRECT_URI
+
+    def get_credentials(self):
+        """Walks a user through a step-by-step guide in creating 
+        credential auth tokens.
+
+        The process is as follows:
+        *  App Asks user to go to a URL that has requested permissions
+        * User reviews permission request and approves it, receving an auth token
+        * App asks for Auth token user obtained, and creates a credentials object
+        """
+        # Run through the OAuth flow and retrieve user credentials
+        flow = OAuth2WebServerFlow(self.client_id, 
+                                   self.client_secret, 
+                                   self.oauth_scope, 
+                                   self.redirect_uri)
+
+        authorize_url = flow.step1_get_authorize_url()
+        print 'Go to the following link in your browser and authorize the App: %s \n' % authorize_url
+        code = raw_input('Enter verification code: ').strip()
+        credentials = flow.step2_exchange(code)
+        return credentials
+
+    @staticmethod
+    def save_credentials(credentials, cred_file):
+        """Write the given credentials to file. 
+        Args:
+           credentials: Google Credential object to be saved.
+           cred_file: (string) the filepath to put the credentials in
+
+        Returns: true iff save was successful. 
+        """
+        if not credentials:
+            raise ValueError("credentials not specified")
+
+        if not cred_file:
+            # Use a default credentials file.
+            cred_file = DEFAULT_CRED_FILEPATH
+
+        contents = credentials.to_json()
+        with  open(cred_file, "w") as f:
+            f.write(contents)
+        
+        return True
+
+    def read_credentials_from_file(file_path):
+        """ Reads serialized credentials from given file and reconstructs
+        the matching Google Credential object.
+        
+        Args:
+           file_path: (string) path to json file containing serialized
+           Credential object.
+
+        Returns:
+          A Google Credentials object iff successful.
+        """
+
+        if not file_path:
+            raise ValueError("file path was not specified")
+
+        with open(file_path, "r") as f:
+            # Read entire file to memory
+            contents = f.read()
+            return Credentials.new_from_json(contents)
 
 
 class GDrive(object):
