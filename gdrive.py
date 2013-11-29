@@ -41,10 +41,10 @@ class GDriveAuth(object):
         # Use Default Values if no user-supplied values exist
 
         if not oauth_scope:
-            self.oauth_scope = DEFAULT_OAUTH_SCOPE
+            self.oauth_scope = self.DEFAULT_OAUTH_SCOPE
 
-        if not reduce_uri:
-            self.redirect_uri = DEFAULT_REDIRECT_URI
+        if not redirect_uri:
+            self.redirect_uri = self.DEFAULT_REDIRECT_URI
 
     def get_credentials(self):
         """Walks a user through a step-by-step guide in creating 
@@ -62,7 +62,7 @@ class GDriveAuth(object):
                                    self.redirect_uri)
 
         authorize_url = flow.step1_get_authorize_url()
-        print 'Go to the following link in your browser and authorize the App: %s \n' % authorize_url
+        print 'Go to the following link in your browser and authorize the App:\n %s \n' % authorize_url
         code = raw_input('Enter verification code: ').strip()
         credentials = flow.step2_exchange(code)
         return credentials
@@ -81,7 +81,7 @@ class GDriveAuth(object):
 
         if not cred_file:
             # Use a default credentials file.
-            cred_file = DEFAULT_CRED_FILEPATH
+            cred_file = self.DEFAULT_CRED_FILEPATH
 
         contents = credentials.to_json()
         with  open(cred_file, "w") as f:
@@ -138,10 +138,25 @@ class GDrive(object):
 
 def test_gauth():
     # Test the Auth Flow
-    pass
-
+    client_id = raw_input('client id: ').strip()
+    client_secret = raw_input('client secret: ').strip()
+    
+    print 'Testing Auth Flow'
+    gauth = GDriveAuth(client_id, client_secret)
+    creds = gauth.get_credentials()
+    print creds
+    
+    dest_file= 'test_creds_file.json'
+    if gauth.save_credentials(creds, dest_file):
+        print "creds saved successfully"
+    else:
+        print "creds NOT saved"
+    
 if __name__ == '__main__':
     # Test some of the code
+    test_gauth()
+    exit(0)
+
 
 ################################################
 
