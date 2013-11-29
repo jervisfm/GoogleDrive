@@ -136,6 +136,13 @@ class GDrive(object):
         pass
 
 
+def test_gauth():
+    # Test the Auth Flow
+    pass
+
+if __name__ == '__main__':
+    # Test some of the code
+
 ################################################
 
 # Sample Test Code borrowed from 
