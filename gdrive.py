@@ -132,7 +132,7 @@ class GDrive(object):
         http = credentials.authorize(http)
         self.drive = build('drive', 'v2', http=http)
     
-    def upload(src_file, dest_path=None, num_tries=3, title=None, description=None,
+    def upload(self, src_file, dest_path=None, num_retries=3, title=None, description=None,
                progress_cb=None):
         """Uploads the 'src_file' to the destination file.
         
@@ -161,7 +161,8 @@ class GDrive(object):
             raise ValueError("src_file was not specified")
         
         creds = self.creds
-        
+        drive = self.drive
+
         if not title:
             title=src_file
 
@@ -239,7 +240,10 @@ def test_gupload():
     gdrive = GDrive(creds)
     src_file = 'document.txt'
     
-    print_status_cb = lambda x: print '%s\n************\n'
+    def print_status_cb(s):
+        print "%s \n************\n" % s
+        
+
     gdrive.upload(src_file, progress_cb = print_status_cb)
 
 def test_code():
