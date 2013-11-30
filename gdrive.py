@@ -111,17 +111,97 @@ class GDriveAuth(object):
 
 
 class GDrive(object):
-    """Represents a Google Drive object. """
-    def __init__(self):
-        pass
-    
-    def upload(src_file, dest_path=None):
-        """Uploads the 'src_file' to the destination file.
-
+    """Represents a Google Drive object that can be used
+    to upload/download files """
+    def __init__(self, credentials):
+        """ Initializes a Google Drive object with given crednetials.
+        
         Args:
-        src_file: the source file to be uploaded.
-        dest_path: the destination folder path."""
-        pass
+           credentials: Google credentials object. Identifies the drive
+           to which files are to upload to / downloaded from. 
+        """
+
+        if not credentials:
+            raise ValueError ("Must Specify credentials to Google drive")
+
+        self.creds = credentials
+        
+        # Create the Drive Service API object
+        http = httplib2.Http()
+        http = credentials.authorize(http)
+        self.drive = build('drive', 'v2', http=http)
+    
+    def upload(src_file, dest_path=None, num_tries=3, title=None, description=None,
+               progress_cb=None):
+        """Uploads the 'src_file' to the destination file.
+        
+        Note that in Google Drive, filenames are not unique identifier; i.e.
+        if two files with the same names can co-exist and this is the default
+        state of things when a new file is uploaded that matches an existing
+        file. So, there is no risk of overwriting accidental overwrite.
+        
+        Args:
+           src_file: (string) the source file to be uploaded.
+           dest_path: (string) the destination folder path. If not specified, then upload
+           will be to the root drive.
+           num_retries: (int) Number of times to try and upload the file.
+           title: (string). Optional. Specifies the name of the file in Google Drive. If not
+           set, filename name used will be same as that of 'src_file'
+           description: (string) Optional. Sets a description of the file. 
+           progress_cb: (function) Python function that takes 1 argument, a python dictionary.
+           This is a callback that will be called to report progress of the upload back to the
+           caller. The supplied dictionary will have the following keys:
+           * 'bytes_sent': # of bytes server has received so far
+           * 'percent_done': # What percent of the upload has been completed
+           * 'duration' : # of seconds that had elapsed to get to this stage.
+           """
+
+        if not src_file:
+            raise ValueError("src_file was not specified")
+        
+        creds = self.creds
+        
+        if not title:
+            title=src_file
+
+        if description is None:
+            description = ''
+
+        # Code below uses Google Python API Client library. 
+        # Specific file of interest: http.py (https://code.google.com/p/google-api-python-client/source/browse/apiclient/http.py)
+
+        # For now, don't explicitly set MIME/type. 
+        # Google seems to auto-detect it anyway. 
+        mimetype = ''
+
+        # Do the upload in pieces to improve robustness against upload errors. 
+        # API docs say chunk size should be multiple of 256KB. (https://developers.google.com/drive/manage-uploads#resume-upload)
+        # We do it in 1MB pieces here. 
+        chunksize = 4 * (256 * 1024)
+        
+
+        media_body = MediaFileUpload(src_file, resumable=True, chunksize=chunksize)
+        body = dict(title=src_file,
+                    description=description)
+        
+        request = drive.files().insert(body=body, media_body=media_body)
+        
+        
+        response = None
+        bytes_sent = 0
+        start_time = time.time()
+        while response is None:
+            # next_chunk() returns None response whilst there is still data to process. 
+            status, response = request.next_chunk(num_retries=num_retries)
+            if status and progress_cb is not None:
+                bytes_sent += chunksize
+                duration = time.time() - start_time
+                percent_done = status.progress() * 100
+                progress_dict = dict(bytes_sent=bytes_sent,
+                                     duration=duration,
+                                     percent_done=percent_done)
+                progress_cb.(progress_dict)
+        return response
 
     def download(src_file, dest_file):
         """Downloads the specified file from Drive onto a local file. 
