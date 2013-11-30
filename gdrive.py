@@ -244,7 +244,11 @@ def test_gupload():
         print "%s \n************\n" % s
         
 
-    gdrive.upload(src_file, progress_cb = print_status_cb)
+    ret = gdrive.upload(src_file, progress_cb = print_status_cb)
+    if not ret:
+        print 'Upload FAILED to complete'
+    else:
+        print 'Upload was SUCCESSFULL'
 
 def test_code():
     # Test some of the code
