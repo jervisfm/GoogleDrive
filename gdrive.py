@@ -89,6 +89,7 @@ class GDriveAuth(object):
         
         return True
 
+    @staticmethod
     def read_credentials_from_file(file_path):
         """ Reads serialized credentials from given file and reconstructs
         the matching Google Credential object.
@@ -231,10 +232,23 @@ def test_gauth():
         print "creds saved successfully"
     else:
         print "creds NOT saved"
+
+def test_gupload():
+    cred_file = 'drive_client_secret.json'
+    creds = GDriveAuth.read_credentials_from_file(cred_file)
+    gdrive = GDrive(creds)
+    src_file = 'document.txt'
     
-if __name__ == '__main__':
+    print_status_cb = lambda x: print '%s\n************\n'
+    gdrive.upload(src_file, progress_cb = print_status_cb)
+
+def test_code():
     # Test some of the code
-    test_gauth()
+    # test_gauth()
+    test_gupload()
+
+if __name__ == '__main__':
+    test_code()
     exit(0)
 
 
