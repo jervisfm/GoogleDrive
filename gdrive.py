@@ -201,7 +201,7 @@ class GDrive(object):
                 progress_dict = dict(bytes_sent=bytes_sent,
                                      duration=duration,
                                      percent_done=percent_done)
-                progress_cb.(progress_dict)
+                progress_cb(progress_dict)
         return response
 
     def download(src_file, dest_file):
